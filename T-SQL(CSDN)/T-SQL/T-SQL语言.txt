@@ -1,0 +1,166 @@
+T-SQL
+
+1、对T-SQL的简单介绍：
+	->T-SQL即Transact-SQL，是SQL在SQL Server上的增强化语言,即T-SQL是对SQL进行了一些扩展之后的版本。(对与现在主流的几大数据库来说，它们都对SQL有各自的一些扩充和截取)。
+2、对T-SQL语言的分类：
+	1)数据定义语言(Data Definition Language)
+	  -->CREATE(新建)
+	  -->DROP(删除)
+	  -->ALTER(修改)
+	2)数据操作语言(Data Manipulation Language)
+	  -->INSERT(插入)
+	  -->DELETE(删除)
+	  -->SELECT(查询)
+	  -->UPDATE(修改)
+	3)数据控制语言(Data Control Language)
+	  -->GRANT(授权)
+	  -->DENY(拒绝)
+	  -->REVOKE(取消授予或删除的权限)
+	4)事务控制语言(TCL)
+	  -->COMMIT(提交)
+	  -->ROLLBACK(回滚)
+
+3、数据定义语言
+	-->数据定义语言(DDL)：负责数据结构定义和数据库对象定义;
+	其主要使用到的关键字为：CREATE(新建)、DROP(删除)、ALTER(修改)
+
+4、数据库
+		-->对数据的简介：
+	     数据库是数据存储的仓库，用户在利用数据库管理系统提供的功能时，首先必须将数据保存到用户的数据库中。数据库中存储的对象主要有：表、索引和视图。(SQL Server支持在一个实例中创建多个数据库，且这些数据库在物理和逻辑上都是相互独立的)
+		-->数据库文件(数据文件和日志文件)：
+			--->数据文件可以有多个，但是主数据文件只能有一个；
+			--->日志文件也可以声明多个；
+			--->数据库文件的属性(文件名及其位置、初始大小、增长方式、最大大小)
+		-->数据库的分类:
+		在SQL Server中数据库可以分为两类：系统数据库和用户数据库。(以下只简单的介绍一下系统数据库)
+			--->系统数据库(master、msdb、model、tempdb)
+			master:是SQL Server中最重要的数据库，用于记录系统级信息(该数据库损坏则SQL Server将无法正常工作)；
+			msdb:保存关于调度报警、作业、操作员等信息；
+			model:用户数据库模板，当用户创建一个数据库时，会将model数据库的全部内容复制到新建数据库中；
+			tempdb:是临时数据库，用于存储用户创建的临时表(查询操作的表即存储其中)、用户声明的变量以及用户定义的游标数据等。
+
+	-->创建、修改、删除数据库
+	   -->创建数据库(创建数据库主要使用CREATE TABLE语句)
+1)、创建数据库的语法：
+CREATE DATABASE <Db_name>
+[ON [PRIMARY]
+(
+	[NAME = <logical_file_name>,]
+	FILENAME = <file_name>
+	[, SIZE = <size>]
+	[, MAXSIZE = <max_size>]
+	[, FILEGROWTH = <growth_size|percentage>]
+)]
+[LOG ON
+(
+	[NAME = <logical_file_name>,]
+	FILENAME = <file_name>
+	[, SIZE = <size>]
+	[, MAXSIZE = <max_size>]
+	[, FILEGROWTH = <growth_size|percentage>]
+)]
+[ COLLATE <collation_name> ]
+[ FOR ATTACH [WITH <service_broker>]| FOR ATTACH_REBUILD_LOG| WITH DB_CHAINING {ON|OFF } | TRUSTWORTHY { ON|OFF }]
+[AS SNAPSHOT OF <source_database_name>]
+[;]
+
+--语法参数说明
+--1、CREATE DATABASE <Db_name>：为创建数据库的主要语法，其中Db_name为数据库的名称；
+--2、PRIMARY：标识该mdf文件为主文件(系统默认第一个为主数据文件)；
+--3、NAME：文件的逻辑名称（在同一个数据库中该值必须唯一）；
+--4、FILENAME：文件的具体存储路径（必须完整且存在）；
+--5、SIZE：设置数据文件的初始大小（单位：M、G等）；
+--6、MAXSIZE：设置数据文件的最大容量（单位：M、G等）；
+--7、FILEGROWTH：设置数据文件的增长量(可以为具体的存储量亦可以为一个百分数)；
+--8、COLLATE：可应用于数据库定义或列定义以定义排序规则，或应用于字符串表达式以应用排序规则投影；(可以不加默认为系统的排序规则)；
+--9、FOR ATTACH：将已存在的数据库文件附加到当前服务器上；
+--10、WITH DB_CHAINING {ON|OFF }：如果该选项为ON,则跨数据库的所有权链有效；否则全链无效；
+--11、TRUSTWORTHY { ON|OFF }：控制访问的安全性(默认情况下为关闭状态)；
+--12、AS SNAPSHOT OF <source_database_name>：指定要创建的数据库为source_database_name指定的源数据库的数据库快照(快照和源数据库必须位于同一实例中)。
+
+
+2)、创建数据库的示例
+--创建数据库(创建数据库主要使用CREATE DATABASE语句)
+
+--1)创建系统默认的数据库
+CREATE DATABASE Demo
+GO
+--代码说明：
+--该语句为创建数据库的最简单形式，所有的参数都为系统默认(数据库文件存储在默认位置)
+
+--2)创建指定的数据库(单数据库、但事务日志)
+CREATE DATABASE Demo
+ON PRIMARY                 --PRIMARY指主数据文件（为系统的默认值，可以省略）
+(						--在这里设置主数据文件mdf                        
+	NAME='Demo',								 --主数据文件的逻辑名称
+	FILENAME='F:\sql\Demo.mdf',					 --文件的具体存储路径(路径必须完整存在)
+	SIZE=3MB,								     --设置文件的初始大小
+	MAXSIZE=100MB,								 --设置文件最大容量      UNLIMITED为不限制大小
+  --filegrowth=1MB								 --设置文件的增长量(可以为字节，也可以为百分数)
+	FILEGROWTH=10%
+)
+LOG ON						--创建数据事务(也可以添加多个事务日志)
+(						--在这里设置事务日志文件                
+	NAME='Demo_log',								--日志的名称
+	FILENAME='F:\sql\Demo_log.ldf',				--日志的完整路径(路径必须完整存在)
+	SIZE=1MB,									--日志文件的初始大小
+	MAXSIZE=UNLIMITED,							--日志文件的最大容量,不设最大限制
+	FILEGROWTH=1MB								--增长速量为1MB
+)
+GO
+
+--3)创建指定的数据库(多数据库、多事务日志)
+CREATE DATABASE DemoTest
+ON PRIMARY                 --PRIMARY指主数据文件（为系统的默认值，可以省略）
+(						--在这里设置主数据文件mdf                        
+	NAME='DemoTest1',							 --主数据文件的逻辑名称
+	FILENAME='F:\sql\DemoTest1.mdf',			 --文件的具体存储路径(路径必须完整存在)
+	SIZE=3MB,								     --设置文件的初始大小
+	MAXSIZE=100MB,								 --设置文件最大容量      UNLIMITED为不限制大小
+	FILEGROWTH=10%
+),										
+(						--在这里设置次数据文件mdf                        
+	NAME='DemoTest2',							 --数据文件的逻辑名称
+	FILENAME='F:\sql\DemoTest2.mdf',			 --文件的具体存储路径(路径必须完整存在)
+	SIZE=3MB,								     --设置文件的初始大小
+	MAXSIZE=100MB,								 --设置文件最大容量      UNLIMITED为不限制大小
+    FILEGROWTH=1MB								 --设置文件的增长量为1MB
+)
+LOG ON		--创建数据事务
+(						--在这里设置事务日志文件                
+	NAME='DemoTest1_log',							--日志的名称
+	FILENAME='F:\sql\DemoTest1_log.ldf',			--日志的完整路径(路径必须完整存在)
+	SIZE=1MB,								    	--日志文件的初始大小
+	MAXSIZE=20MB,						        	--日志文件的最大容量,不设最大限制
+	FILEGROWTH=1MB								    --增长速量为1MB
+),
+(						--在这里设置事务日志文件                
+	NAME='DemoTest2_log',							--日志的名称
+	FILENAME='F:\sql\DemoTest2_log.ldf',			--日志的完整路径(路径必须完整存在)
+	SIZE=1MB,									    --日志文件的初始大小
+	MAXSIZE=UNLIMITED,							    --日志文件的最大容量,不设最大限制
+	FILEGROWTH=10%								    --增长速量为10%
+)
+GO
+
+5、数据表的创建、修改及删除操作
+	1）数据表的创建操作：
+
+
+	2）数据表的修改操作：
+
+
+	3）数据表的删除操作：
+
+
+
+
+
+
+
+对SQL中的名词解释：
+1、数据定义语言(DDL)：负责数据结构定义和数据库对象定义;
+2、数据操作语言(DML)：用户对数据库中的数据进行的操作的媒介语言；
+3、数据控制语言(DCL)：用来设置或更改数据库用户或角色权限；
+4、
+	

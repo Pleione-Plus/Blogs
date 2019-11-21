@@ -1,0 +1,155 @@
+
+实体型定义：
+
+
+读者信息：
+
+姓名、性别、证件号、系别、Email、手机、办证日期、生效日期、累计借书、借阅等级、违章次数、欠款金额
+
+等级信息：
+
+读者类型、最多可借图书、最多可预约图书、最多可委托图书、最多借阅时间
+
+图书类型信息：
+
+索书号、题名/责任者、ISBN及定价、载体形态项、丛编项、出版时间
+
+学科主题信息：
+
+学科主题名称
+
+出版社信息：
+
+出版社名称
+
+图书信息：
+
+条码号、校区-馆藏地、书刊状态、定位
+
+
+
+
+
+关系表定义：
+
+
+读者信息表：
+
+姓名  NVARCHAR(8) NOT NULL
+性别 BIT NOT NULL         --(0:女、1:男)
+证件号 VARCHAR(11) NOT NULL --唯一约束
+系别 NVARCHAR(16) NOT NULL
+Email VARCHAR(32) NOT NULL
+手机 CHAR(11) NOT NULL
+办证日期 DATE NOT NULL
+生效日期 DATE NOT NULL --CHECK约束:必须>=办证日期
+累计借书 INT NOT NULL --默认为0
+借阅等级 INT NOT NULL --默认为1,由累计借书量判断
+违章次数 INT NOT NULL --默认为0
+欠款金额 MONEY NOT NULL --默认为0
+
+读者等级 INT NOT NULL --外键(与等级信息表相关联)
+
+--创建的触发器
+CREATE TRIGGER TR_readerInfo_readerEffectiveDate
+ON readerInfo
+WITH ENCRYPTION			--加密
+INSTEAD OF INSERT
+AS
+BEGIN
+	DECLARE @readerEffectiveDate DATE,@readerRegistrationDate DATE
+	SET @readerEffectiveDate = (SELECT readerEffectiveDate FROM inserted)
+	SET @readerRegistrationDate = (SELECT readerRegistrationDate FROM inserted)
+	IF @readerEffectiveDate >= @readerRegistrationDate
+	BEGIN
+	 INSERT INTO readerInfo(readerName, readerGender, readerNum, readerClass, readerEmail, readerPhone, readerRegistrationDate, readerEffectiveDate, readerBookCount, readerBorrowLevel, readerViolationCount, readerDebtMoney, readerRank)
+	 SELECT readerName, readerGender, readerNum, readerClass, readerEmail, readerPhone, readerRegistrationDate, readerEffectiveDate, readerBookCount, readerBorrowLevel, readerViolationCount, readerDebtMoney, readerRank 
+	 FROM inserted
+	END
+	ELSE
+	 PRINT '输入的日期不符合规范'
+END
+
+
+
+
+等级信息表：
+
+读者类型（本科生：0、研究生：1、教师：2）
+最多可借图书（本科生50本、研究生80本、教师100本）
+最多可预约图书（本科生0本、研究生0本、教师1本）
+最多可委托图书（本科生0本、研究生0本、教师1本）
+最多借阅时间（本科生3月、研究生5月、教师6月）
+
+读者类型 INT NO NULL --CHECK约束
+最大可借图书 INT NOT NULL --CHECK约束
+最大可委托图书 INT NOT NULL --CHECK约束
+最大可预约图书 INT NOT NULL --CHECK约束
+最大借阅时间 INT NOT NULL --CHECK约束
+
+
+
+图书类型信息表：
+
+索书号 NVARCHAR(16) NOT NULL
+题名/责任者 NVARCHAR(32) NOT NULL
+ISBN及定价 NVARCHAR(64) NOT NULL
+载体形态项 NVARCHAR(32) NOT NULL
+丛编项 NVARCHAR(32) NOT NULL
+印刷时间 DATE NOT NULL
+
+出版发行项 NVARCHAR(32) NOT NULL				--外键（与出版社信息表相关联）
+
+
+
+图书评论信息表：
+
+评论内容 NVARCHAR(128) NOT NULL
+评论时间 DATE NOT NULL
+索书号 NVARCHAR(16) NOT NULL --外键（与图书类型信息表相关联）
+评论人 NVARCHAR(8) NOT NULL	--外键（与读者信息表像关联）
+
+
+
+学科主题信息表
+
+学科主题名称
+
+
+主题与图书类型的联系表
+
+索书号							--外键
+主题信息						--外键
+
+
+
+出版社信息表
+
+出版社名称
+
+
+
+图书信息表
+
+条码号 CHAR(7) NOT NULL								--唯一约束
+校区-馆藏地 NVARCHAR(64) NOT NULL
+书刊状态 BIT NOT NULL
+定位 NVARCHAR(32) NOT NULL
+
+索书号 NVARCHAR(16) NOT NULL --外键（与图书类型信息相关联）
+
+
+
+借阅信息表
+
+借阅人(外键)、借阅书籍(外键)、借阅时间、应还时间、实际归还日期、还书位置
+
+借阅时间 DATE NOT NULL
+应还时间 DATE NOT NULL	--根据借阅时间、读者等级计算得到
+实际归还时间 DATE NOT NULL	-- 实际归还时间>=借阅时间
+还书位置 NVARCHAR(32) NOT NULL
+
+借阅人 NVARCHAR(8) NOT NULL				--外键（与读者信息相关联）
+借阅书籍 条码号 CHAR(7) NOT NULL	--外键（与图书信息先关联）
+
+
